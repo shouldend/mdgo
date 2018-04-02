@@ -91,7 +91,7 @@ func (c *htmlConverter) element(w io.Writer, tag string, node *html.Node) {
 		return
 	case "hr":
 		c.hr(w, node)
-	case "image":
+	case "img":
 		c.image(w, node)
 	case "li":
 		c.li(w, node)
@@ -396,6 +396,21 @@ func getAttr(node *html.Node, key string) string {
 	return ""
 }
 
+// hasClass - has class attr
+func hasClass(node *html.Node, attr string) bool {
+	for _, a := range node.Attr {
+		if a.Key != "class" {
+			continue
+		}
+		for _, val := range strings.Split(strings.ToLower(a.Val), " ") {
+			if val == attr {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // getParentKey - get key for parent node
 func getParentKey(node *html.Node) string {
 	switch node.Parent.Type {
@@ -415,7 +430,7 @@ func nodeSearchByTag(node *html.Node, tag, attr string) *html.Node {
 		if attr == "_all" {
 			return node
 		}
-		if getAttr(node, "class") == attr {
+		if hasClass(node, attr) {
 			return node
 		}
 	}
