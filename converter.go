@@ -29,5 +29,5 @@ func newBase() *baseConverter {
 }
 
 func (c *baseConverter) base() *baseConverter {
-	return (*baseConverter)(c)
+	return c
 }

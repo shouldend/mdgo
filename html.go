@@ -121,12 +121,12 @@ func (c *htmlConverter) text(w io.Writer, node *html.Node) {
 		return
 	}
 	// trim spaces
-	_ = c
-	if strings.TrimSpace(node.Data) == "" {
+	data := strings.TrimSpace(node.Data)
+	if data == "" {
 		return
 	}
 	//s := strings.Trim(node.Data, "\t\r\n")
-	s := regexp.MustCompile(`[[:space:]][[:space:]]*`).ReplaceAllString(strings.Trim(node.Data, "\t\r\n"), " ")
+	s := regexp.MustCompile(`[[:space:]][[:space:]]*`).ReplaceAllString(strings.Trim(data, "\t\r\n"), " ")
 	s = replacer.Replace(s)
 	// block quote
 	s = strings.NewReplacer("\n", "\n"+strings.Repeat("> ", c.quoteLevel)).Replace(s)
@@ -233,8 +233,11 @@ func (c *htmlConverter) pre(w io.Writer, node *html.Node) {
 	c.isRaw = true
 	originLang := c.lang
 	for _, attr := range node.Attr {
-		if lang, exists := c.langMap[attr.Val]; exists {
-			c.lang = lang
+		realAttrs := strings.Split(attr.Val, " ")
+		for _, realAttr := range realAttrs {
+			if lang, exists := c.langMap[realAttr]; exists {
+				c.lang = lang
+			}
 		}
 	}
 	defer func() {
@@ -321,7 +324,7 @@ func (c *htmlConverter) table(w io.Writer, node *html.Node) {
 				// as tag may be exists, just decode
 				data := new(bytes.Buffer)
 				for sc := child.FirstChild; sc != nil; sc = sc.NextSibling {
-					onelineFormat(data, sc)
+					oneLineFormat(data, sc)
 				}
 				ret = append(ret, data.String())
 			}
@@ -463,13 +466,15 @@ func nodeSearchById(node *html.Node, id string) *html.Node {
 }
 
 // oneLineFormat - format node into one line
-func onelineFormat(w io.Writer, node *html.Node) {
+func oneLineFormat(w io.Writer, node *html.Node) {
 	if node == nil {
 		return
 	}
 	switch node.Type {
 	case html.TextNode:
-		fmt.Fprint(w, strings.Replace(replacer.Replace(node.Data), "\n", "<br>", -1))
+		var data = node.Data
+		data = strings.TrimSpace(data)
+		fmt.Fprint(w, strings.Replace(replacer.Replace(data), "\n", "<br>", -1))
 		return
 	case html.ElementNode:
 		tag := strings.ToLower(node.Data)
@@ -478,7 +483,7 @@ func onelineFormat(w io.Writer, node *html.Node) {
 		} else {
 			fmt.Fprintf(w, "<%s>", tag)
 			for child := node.FirstChild; child != nil; child = child.NextSibling {
-				onelineFormat(w, child)
+				oneLineFormat(w, child)
 			}
 			fmt.Fprintf(w, "</%s>", tag)
 		}
